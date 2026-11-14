@@ -1,4 +1,5 @@
 venv/
+.venv*/
 __pycache__/
 *.py[cod]
 .env
@@ -7,3 +8,5 @@ staticfiles/
 media/
 .vscode/
 .idea/
+Deskripsi projek banjut.pdf
+.venv-1/
