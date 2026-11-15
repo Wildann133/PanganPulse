@@ -10,3 +10,6 @@ media/
 .idea/
 Deskripsi projek banjut.pdf
 .venv-1/
+etl/data/processed/data-2026_cleaned.csv
+etl/data/processed/harga_pangan_2025_2026.csv
+etl/data/processed/harga_pangan_2025_2026_normalized.csv
