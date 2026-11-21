@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}PanganPulse{% endblock %}
+
+{% block content %}
+<main style="max-width: 640px; margin: 3rem auto; padding: 0 1rem; font-family: system-ui, sans-serif; line-height: 1.6;">
+    <h1>PanganPulse</h1>
+    <p>Django berjalan. Halaman ini sementara dan akan diganti Dashboard Overview.</p>
+
+    <h2>Status MongoDB</h2>
+    {% if mongo_terhubung %}
+        <p>✅ Terhubung (MongoDB {{ mongo_detail }}), database <code>{{ mongo_db }}</code>.</p>
+        {% if koleksi %}
+            <table border="1" cellpadding="6" style="border-collapse: collapse;">
+                <tr><th>Koleksi</th><th>Jumlah dokumen</th></tr>
+                {% for k in koleksi %}
+                    <tr><td>{{ k.nama }}</td><td>{{ k.jumlah }}</td></tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>Database masih kosong. Koleksi akan muncul setelah data diimport.</p>
+        {% endif %}
+    {% else %}
+        <p>❌ Belum terhubung ({{ mongo_detail }}). Jalankan:
+            <code>docker compose -f docker/docker-compose.yml up -d</code></p>
+    {% endif %}
+</main>
+{% endblock %}
