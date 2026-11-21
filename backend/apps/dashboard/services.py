@@ -5,7 +5,8 @@ jadi view tidak pernah menghitung ulang dari jutaan dokumen mentah.
 """
 
 UKURAN_VALID = ("median", "rata_rata")   # daftar putih untuk parameter `ukuran`
-AMBANG_LONJAKAN = 10.0                   # kenaikan (%) yang dianggap lonjakan
+AMBANG_LONJAKAN = 10.0                   # kenaikan (%) yang dianggap lonjakan (bawaan)
+AMBANG_PILIHAN = (5.0, 10.0, 15.0, 20.0)  # daftar putih untuk parameter `ambang`
 JUMLAH_PERINGKAT = 5
 
 
@@ -37,6 +38,9 @@ def bandingkan(sekarang, sebelumnya, ukuran):
             "nama": nama,
             "nilai": dok[ukuran],
             "n_observasi": dok["n_observasi"],
+            "n_wilayah": dok["n_wilayah"],
+            "minimum": dok["minimum"],
+            "maksimum": dok["maksimum"],
             "nilai_pembanding": None,
             "perubahan_pct": None,
         }
@@ -48,8 +52,8 @@ def bandingkan(sekarang, sebelumnya, ukuran):
     return hasil
 
 
-def susun_kpi(komoditas):
-    """Angka ringkas dari daftar hasil `bandingkan`."""
+def susun_kpi(komoditas, ambang=AMBANG_LONJAKAN):
+    """Angka ringkas dari daftar hasil `bandingkan`; `ambang` = batas kenaikan (%) untuk lonjakan."""
     berubah = [k for k in komoditas if k["perubahan_pct"] is not None]
     naik = max(berubah, key=lambda k: k["perubahan_pct"], default=None)
     turun = min(berubah, key=lambda k: k["perubahan_pct"], default=None)
@@ -61,11 +65,23 @@ def susun_kpi(komoditas):
         "tertinggi": by_nilai[:JUMLAH_PERINGKAT],
         "terendah": by_nilai[::-1][:JUMLAH_PERINGKAT],
         "lonjakan": sorted(
-            (k for k in berubah if k["perubahan_pct"] >= AMBANG_LONJAKAN),
+            (k for k in berubah if k["perubahan_pct"] >= ambang),
             key=lambda k: k["perubahan_pct"],
             reverse=True,
         ),
     }
+
+
+def baca_ambang(mentah):
+    if mentah in (None, ""):
+        return AMBANG_LONJAKAN
+    try:
+        nilai = float(mentah)
+    except (TypeError, ValueError):
+        raise ParameterTidakValid("ambang harus berupa angka")
+    if nilai not in AMBANG_PILIHAN:
+        raise ParameterTidakValid("ambang harus salah satu dari " + ", ".join(f"{a:g}" for a in AMBANG_PILIHAN))
+    return nilai
 
 
 def ambil_status(db):
@@ -80,7 +96,7 @@ def ambil_status(db):
     }
 
 
-def bangun_ringkasan(db, periode=None, ukuran="median"):
+def bangun_ringkasan(db, periode=None, ukuran="median", pembanding=None, ambang=None):
     if ukuran not in UKURAN_VALID:
         raise ParameterTidakValid(f"ukuran harus salah satu dari {', '.join(UKURAN_VALID)}")
 
@@ -93,7 +109,11 @@ def bangun_ringkasan(db, periode=None, ukuran="median"):
         periode = pilih_periode_awal(daftar)
     elif periode not in tersedia:
         raise ParameterTidakValid("periode tidak tersedia")
-    pembanding = periode_sebelumnya(daftar, periode)
+    ambang = baca_ambang(ambang)
+    if pembanding is None:
+        pembanding = periode_sebelumnya(daftar, periode)
+    elif pembanding not in tersedia or pembanding == periode:
+        raise ParameterTidakValid("pembanding tidak tersedia atau sama dengan periode")
 
     semua = {}
     for d in db.ringkasan_bulanan.find({}, {"_id": 0}).sort("periode", 1):
@@ -118,6 +138,8 @@ def bangun_ringkasan(db, periode=None, ukuran="median"):
             "Perubahan terhadap bulan penuh bisa menyesatkan."
         )
     prev_info = next((p for p in daftar if p["periode"] == pembanding), None)
+    if prev_info and not prev_info["lengkap"]:
+        catatan.append(f"Periode pembanding {pembanding} belum lengkap ({prev_info['hari_observasi']} hari).")
     if prev_info and prev_info["jumlah_komoditas"] != info["jumlah_komoditas"]:
         catatan.append(
             f"Jumlah komoditas berbeda ({prev_info['jumlah_komoditas']} pada {pembanding}, "
@@ -128,11 +150,12 @@ def bangun_ringkasan(db, periode=None, ukuran="median"):
         "periode": periode,
         "pembanding": pembanding,
         "ukuran": ukuran,
-        "ambang_lonjakan": AMBANG_LONJAKAN,
+        "ambang_lonjakan": ambang,
+        "ambang_pilihan": list(AMBANG_PILIHAN),
         "periode_tersedia": [
             {"periode": p["periode"], "lengkap": p["lengkap"], "hari": p["hari_observasi"]} for p in daftar
         ],
-        "kpi": susun_kpi(komoditas),
+        "kpi": susun_kpi(komoditas, ambang),
         "komoditas": komoditas,
         "tren": tren,
         "status": ambil_status(db),

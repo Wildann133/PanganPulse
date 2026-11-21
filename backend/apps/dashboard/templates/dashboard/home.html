@@ -31,6 +31,13 @@
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .seg button { background: var(--surface); color: var(--ink2); padding: 6px 12px; font-size: 0.9rem; border: 0; cursor: pointer; }
     .seg button[aria-pressed="true"] { background: var(--btn-on); color: var(--btn-on-ink); }
+    .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .field label, .field .label { font-size: 0.78rem; color: var(--ink2); }
+    .field .control { width: 100%; }
+    .seg button { flex: 1; }
+    .btn { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }
+    .btn:hover { border-color: var(--axis); }
+    .btn:focus-visible, input.control:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
     .control:focus-visible, .seg button:focus-visible, summary:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
     .note { background: var(--note-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; }
     .rank li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 0.92rem; }
@@ -47,21 +54,53 @@
 
 <main class="mx-auto max-w-6xl px-4 py-8 flex flex-col gap-5 min-w-0">
 
-    <header class="flex flex-wrap items-end justify-between gap-4">
+    <header>
         <div>
             <p class="label">PanganPulse</p>
             <h1 class="text-2xl font-semibold">Ringkasan harga pangan</h1>
             <p id="subjudul" class="text-sm t-ink2">Memuat data…</p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
-            <label for="periode" class="text-sm t-ink2">Periode</label>
-            <select id="periode" class="control" aria-label="Pilih periode"></select>
-            <div class="seg" role="group" aria-label="Ukuran harga">
-                <button type="button" id="u-median" aria-pressed="true">Median</button>
-                <button type="button" id="u-rata_rata" aria-pressed="false">Rata-rata</button>
-            </div>
-        </div>
     </header>
+
+    <section class="card" aria-label="Filter">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="field"><label for="periode">Periode</label><select id="periode" class="control"></select></div>
+            <div class="field"><label for="pembanding">Dibandingkan dengan</label><select id="pembanding" class="control"></select></div>
+            <div class="field">
+                <span class="label" id="l-ukuran">Ukuran harga</span>
+                <div class="seg" role="group" aria-labelledby="l-ukuran">
+                    <button type="button" id="u-median" aria-pressed="true">Median</button>
+                    <button type="button" id="u-rata_rata" aria-pressed="false">Rata-rata</button>
+                </div>
+            </div>
+            <div class="field"><label for="ambang">Lonjakan jika naik ≥</label><select id="ambang" class="control"></select></div>
+
+            <div class="field"><label for="cari">Cari komoditas</label><input id="cari" type="search" class="control" placeholder="mis. cabai" maxlength="40" autocomplete="off"></div>
+            <div class="field">
+                <span class="label" id="l-arah">Arah perubahan</span>
+                <div class="seg" role="group" aria-labelledby="l-arah">
+                    <button type="button" data-arah="semua" aria-pressed="true">Semua</button>
+                    <button type="button" data-arah="naik" aria-pressed="false">Naik</button>
+                    <button type="button" data-arah="turun" aria-pressed="false">Turun</button>
+                    <button type="button" data-arah="tetap" aria-pressed="false">Tetap</button>
+                </div>
+            </div>
+            <div class="field">
+                <label for="urut">Urutkan</label>
+                <select id="urut" class="control">
+                    <option value="perubahan_desc">Kenaikan terbesar dulu</option>
+                    <option value="perubahan_asc">Penurunan terbesar dulu</option>
+                    <option value="harga_desc">Harga tertinggi dulu</option>
+                    <option value="nama">Nama A–Z</option>
+                </select>
+            </div>
+            <div class="field justify-end"><button type="button" id="reset" class="btn">Atur ulang filter</button></div>
+        </div>
+        <p class="text-xs t-muted mt-3">
+            Periode, pembanding, ukuran, dan ambang mengubah semua angka. Arah, pencarian, dan urutan hanya mengubah grafik perubahan dan tabel.
+            <span id="hitung" class="t-ink2"></span>
+        </p>
+    </section>
 
     <div id="pesan" class="note" role="status" hidden></div>
 
@@ -115,11 +154,11 @@
         </section>
     </div>
 
-    <details class="card">
-        <summary class="cursor-pointer font-semibold">Tabel lengkap semua komoditas</summary>
+    <details class="card" open>
+        <summary class="cursor-pointer font-semibold">Tabel data komoditas</summary>
         <div class="overflow-x-auto mt-3">
             <table class="lengkap num" id="tabel">
-                <thead><tr><th>Komoditas</th><th id="th-sekarang">Periode</th><th id="th-pembanding">Pembanding</th><th>Perubahan</th></tr></thead>
+                <thead><tr><th>Komoditas</th><th id="th-sekarang">Periode</th><th id="th-pembanding">Pembanding</th><th>Perubahan</th><th>Rentang antarwilayah</th><th>Wilayah</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>

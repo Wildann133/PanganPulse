@@ -4,7 +4,7 @@ from . import services
 
 
 def dok(median, n=100):
-    return {"median": median, "rata_rata": median * 1.1, "n_observasi": n}
+    return {"median": median, "rata_rata": median * 1.1, "n_observasi": n, "n_wilayah": 10, "minimum": median / 2, "maksimum": median * 2}
 
 
 class BandingkanTests(SimpleTestCase):
@@ -58,3 +58,24 @@ class PeriodeTests(SimpleTestCase):
     def test_periode_sebelumnya(self):
         self.assertEqual(services.periode_sebelumnya(self.daftar, "2026-10"), "2026-09")
         self.assertIsNone(services.periode_sebelumnya(self.daftar, "2026-09"))
+
+
+class AmbangDanRentangTests(SimpleTestCase):
+    def test_ambang_bawaan_dan_pilihan(self):
+        self.assertEqual(services.baca_ambang(None), services.AMBANG_LONJAKAN)
+        self.assertEqual(services.baca_ambang("15"), 15.0)
+
+    def test_ambang_di_luar_daftar_putih_ditolak(self):
+        for mentah in ("7", "abc", "1e9", "-5"):
+            with self.assertRaises(services.ParameterTidakValid):
+                services.baca_ambang(mentah)
+
+    def test_ambang_mengubah_daftar_lonjakan(self):
+        data = services.bandingkan({"A": dok(112), "B": dok(103)}, {"A": dok(100), "B": dok(100)}, "median")
+        self.assertEqual([k["nama"] for k in services.susun_kpi(data, 10.0)["lonjakan"]], ["A"])
+        self.assertEqual([k["nama"] for k in services.susun_kpi(data, 5.0)["lonjakan"]], ["A"])
+        self.assertEqual(services.susun_kpi(data, 20.0)["lonjakan"], [])
+
+    def test_bandingkan_membawa_rentang_dan_wilayah(self):
+        item = services.bandingkan({"A": dok(100)}, {}, "median")[0]
+        self.assertEqual((item["minimum"], item["maksimum"], item["n_wilayah"]), (50, 200, 10))

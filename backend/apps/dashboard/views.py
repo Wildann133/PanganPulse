@@ -16,12 +16,14 @@ def home(request):
 
 @require_GET
 def api_ringkasan(request):
-    """JSON untuk Dashboard Overview. Parameter (daftar putih): `periode` (YYYY-MM), `ukuran` (median | rata_rata)."""
+    """JSON untuk Dashboard Overview. Parameter (daftar putih): `periode` dan `pembanding` (YYYY-MM), `ukuran` (median | rata_rata), `ambang` (5 | 10 | 15 | 20)."""
     try:
         data = services.bangun_ringkasan(
             get_db(),
             periode=request.GET.get("periode") or None,
             ukuran=request.GET.get("ukuran", "median"),
+            pembanding=request.GET.get("pembanding") or None,
+            ambang=request.GET.get("ambang") or None,
         )
     except services.ParameterTidakValid as exc:
         return JsonResponse({"error": str(exc)}, status=400)
