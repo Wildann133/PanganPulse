@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load regional_filters %}
+
+{% block title %}Perbandingan Harga Antarwilayah | PanganPulse{% endblock %}
+
+{% block content %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<div class="min-h-screen bg-slate-50 text-slate-800">
+  <div class="mx-auto max-w-6xl px-4 py-8">
+
+    <h1 class="text-2xl font-bold">Perbandingan Harga Antarwilayah</h1>
+    <p class="mt-1 text-slate-600">
+      Bandingkan harga rata-rata bulanan satu komoditas di seluruh wilayah:
+      selisih harga, peringkat, dan tingkat disparitas (Coefficient of Variation).
+    </p>
+
+    {% if error %}
+      <div class="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">{{ error }}</div>
+    {% else %}
+
+    <!-- FILTER -->
+    <form method="get" class="mt-6 grid gap-4 rounded-xl bg-white p-4 shadow-sm sm:grid-cols-4">
+      <label class="block text-sm font-medium">Komoditas
+        <select name="komoditas" class="mt-1 w-full rounded-md border border-slate-300 p-2">
+          {% for c in commodities %}
+            <option value="{{ c }}" {% if c == komoditas %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block text-sm font-medium">Periode
+        <select name="periode" class="mt-1 w-full rounded-md border border-slate-300 p-2">
+          {% for p in periods %}
+            <option value="{{ p }}" {% if p == periode %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block text-sm font-medium">Level wilayah
+        <select name="level" class="mt-1 w-full rounded-md border border-slate-300 p-2">
+          {% for key, label in levels.items %}
+            <option value="{{ key }}" {% if key == level %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="flex items-end">
+        <button type="submit" class="w-full rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700">Tampilkan</button>
+      </div>
+    </form>
+
+    {% if summary %}
+    <!-- KARTU RINGKASAN -->
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl bg-white p-4 shadow-sm">
+        <div class="text-sm text-slate-500">Termurah</div>
+        <div class="text-lg font-bold text-emerald-600">{{ summary.harga_min|rupiah }}</div>
+        <div class="text-sm">{{ summary.wilayah_termurah }}</div>
+      </div>
+      <div class="rounded-xl bg-white p-4 shadow-sm">
+        <div class="text-sm text-slate-500">Termahal</div>
+        <div class="text-lg font-bold text-red-600">{{ summary.harga_max|rupiah }}</div>
+        <div class="text-sm">{{ summary.wilayah_termahal }}</div>
+      </div>
+      <div class="rounded-xl bg-white p-4 shadow-sm">
+        <div class="text-sm text-slate-500">Selisih termahal - termurah</div>
+        <div class="text-lg font-bold">{{ summary.selisih_max_min_rp|rupiah }}</div>
+        <div class="text-sm">{{ summary.disparitas_persen|persen }} di atas harga termurah</div>
+      </div>
+      <div class="rounded-xl bg-white p-4 shadow-sm">
+        <div class="text-sm text-slate-500">Coefficient of Variation (CV)</div>
+        <div class="text-lg font-bold">{{ summary.cv_persen|persen }}</div>
+        <div class="text-sm">Disparitas: <span class="font-semibold">{{ summary.kategori_disparitas|default:"-" }}</span>
+          &middot; rata-rata {{ summary.harga_rata2|rupiah }} ({{ summary.n_wilayah }} wilayah)</div>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-slate-500">
+      CV = simpangan baku harga antarwilayah &divide; rata-rata &times; 100%. Makin besar CV, makin timpang harga antarwilayah.
+      Kategori: Rendah &lt; 15%, Sedang 15&ndash;30%, Tinggi &ge; 30%.
+    </p>
+
+    <!-- GRAFIK PERINGKAT -->
+    <div class="mt-6 rounded-xl bg-white p-4 shadow-sm">
+      <h2 class="font-semibold">Harga {{ komoditas }} per {{ level_label }} &mdash; {{ periode }}</h2>
+      {% if chart_note %}<p class="text-xs text-slate-500">{{ chart_note }}</p>{% endif %}
+      <div id="chart-ranking" class="mt-2 h-96"></div>
+    </div>
+
+    <!-- TABEL PERINGKAT -->
+    <div class="mt-6 rounded-xl bg-white p-4 shadow-sm">
+      <h2 class="font-semibold">Peringkat wilayah (1 = paling mahal)</h2>
+      <div class="mt-2 max-h-[32rem] overflow-auto">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 bg-slate-100 text-left">
+            <tr>
+              <th class="p-2">#</th>
+              <th class="p-2">Wilayah</th>
+              {% if level == "kabupaten_kota" %}<th class="p-2">Provinsi</th>{% endif %}
+              <th class="p-2 text-right">Harga rata-rata</th>
+              <th class="p-2 text-right">Selisih vs rata-rata</th>
+              <th class="p-2 text-right">Selisih (%)</th>
+              <th class="p-2 text-right">Selisih vs termurah</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in ranking %}
+            <tr class="border-t border-slate-100">
+              <td class="p-2">{{ r.peringkat }}</td>
+              <td class="p-2">{{ r.nama_wilayah }}</td>
+              {% if level == "kabupaten_kota" %}<td class="p-2">{{ r.provinsi }}</td>{% endif %}
+              <td class="p-2 text-right">{{ r.harga_rata2|rupiah }}</td>
+              <td class="p-2 text-right {{ r.selisih_rp|warna_selisih }}">{{ r.selisih_rp|selisih_rp }}</td>
+              <td class="p-2 text-right {{ r.selisih_persen|warna_selisih }}">{{ r.selisih_persen|selisih_persen }}</td>
+              <td class="p-2 text-right">{{ r.selisih_vs_termurah_rp|rupiah }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+      <div class="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+        Tidak ada data untuk kombinasi ini (komoditas mungkin belum tercatat pada periode tersebut).
+      </div>
+    {% endif %}
+
+    <!-- DISPARITAS ANTAR KOMODITAS -->
+    <div class="mt-6 rounded-xl bg-white p-4 shadow-sm">
+      <h2 class="font-semibold">Komoditas dengan harga paling timpang antar {{ level_label|lower }} ({{ periode }})</h2>
+      <div id="chart-cv" class="mt-2 h-[28rem]"></div>
+    </div>
+
+    {% endif %}
+  </div>
+</div>
+
+{% if not error %}
+{{ chart_ranking|json_script:"data-ranking" }}
+{{ chart_cv|json_script:"data-cv" }}
+<script>
+  const ranking = JSON.parse(document.getElementById("data-ranking").textContent);
+  const cv = JSON.parse(document.getElementById("data-cv").textContent);
+  const cfg = { responsive: true, displayModeBar: false };
+
+  if (ranking.length) {
+    Plotly.newPlot("chart-ranking", [{
+      type: "bar",
+      x: ranking.map(r => r.wilayah),
+      y: ranking.map(r => r.harga),
+      marker: { color: "#059669" },
+      hovertemplate: "%{x}<br>Rp %{y:,.0f}<extra></extra>",
+    }], {
+      margin: { t: 10, b: 120, l: 70, r: 10 },
+      xaxis: { tickangle: -45, automargin: true },
+      yaxis: { title: "Harga rata-rata (Rp)" },
+    }, cfg);
+  }
+
+  if (cv.length) {
+    const rows = cv.slice().reverse();   // CV tertinggi tampil di atas
+    Plotly.newPlot("chart-cv", [{
+      type: "bar", orientation: "h",
+      x: rows.map(r => r.cv),
+      y: rows.map(r => r.komoditas),
+      marker: { color: "#0ea5e9" },
+      hovertemplate: "%{y}<br>CV %{x:.2f}%<extra></extra>",
+    }], {
+      margin: { t: 10, b: 40, l: 260, r: 10 },
+      xaxis: { title: "Coefficient of Variation (%)" },
+    }, cfg);
+  }
+</script>
+{% endif %}
+{% endblock %}

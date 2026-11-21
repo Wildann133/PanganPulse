@@ -13,3 +13,6 @@ Deskripsi projek banjut.pdf
 etl/data/processed/data-2026_cleaned.csv
 etl/data/processed/harga_pangan_2025_2026.csv
 etl/data/processed/harga_pangan_2025_2026_normalized.csv
+etl/data/processed/regional_monthly_prices.csv
+etl/data/processed/regional_comparison_prices.csv
+etl/data/processed/regional_comparison_summary.csv
