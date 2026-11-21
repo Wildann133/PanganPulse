@@ -10,7 +10,7 @@ from pymongo import ASCENDING, MongoClient
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "panganpulse")
 
-COLLECTIONS = ["harga_pangan", "komoditas", "wilayah", "etl_log"]
+COLLECTIONS = ["harga_pangan", "komoditas", "wilayah", "etl_log", "ringkasan_bulanan", "periode"]
 
 # (nama koleksi, kunci indeks, opsi)
 INDEXES = [
@@ -25,6 +25,9 @@ INDEXES = [
     ),
     ("komoditas", [("nama", ASCENDING)], {"name": "nama_unik", "unique": True}),
     ("wilayah", [("provinsi", ASCENDING), ("kabupaten_kota", ASCENDING)], {"name": "wilayah_unik", "unique": True}),
+    # Ringkasan untuk dashboard (diisi etl/mongo/build_ringkasan.py).
+    ("ringkasan_bulanan", [("periode", ASCENDING), ("komoditas", ASCENDING)], {"name": "periode_komoditas_unik", "unique": True}),
+    ("periode", [("periode", ASCENDING)], {"name": "periode_unik", "unique": True}),
 ]
 
 
