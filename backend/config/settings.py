@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -129,10 +128,3 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# MongoDB (data hasil pipeline ETL / Airflow)
-MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27018')
-MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'pangan_pulse')
-MONGO_COLLECTION_PRICES = 'regional_comparison_prices'
-MONGO_COLLECTION_SUMMARY = 'regional_comparison_summary'
