@@ -132,7 +132,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # MongoDB (data hasil pipeline ETL / Airflow)
-# Port 27018 = MongoDB milik docker-compose proyek (lihat docker/docker-compose.airflow.yml)
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27018')
 MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'pangan_pulse')
 MONGO_COLLECTION_PRICES = 'regional_comparison_prices'

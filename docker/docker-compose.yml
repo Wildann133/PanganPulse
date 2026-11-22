@@ -1,0 +1,68 @@
+# PanganPulse: layanan database untuk pengembangan lokal.
+# Jalankan dari root proyek:  docker compose -f docker/docker-compose.yml up -d
+# Hanya bisa diakses dari komputer ini (127.0.0.1) dan TANPA password: khusus dev, jangan dipakai untuk deploy.
+# Layanan lain (minio, airflow, django) akan ditambahkan di file ini oleh anggota yang bertanggung jawab.
+
+name: panganpulse
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: panganpulse-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Antarmuka web untuk melihat database, koleksi, dan dokumen: http://localhost:8081
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: panganpulse-mongo-express
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_BASICAUTH: "false"
+
+  # Airflow (orkestrasi pipeline ETL Regional Comparison): http://localhost:8080  (login admin / admin)
+  # Pertama kali dijalankan butuh `--build` karena image dibuat dari docker/Dockerfile.airflow.
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    container_name: panganpulse-airflow
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/etl          # agar DAG bisa 'import pangan_etl'
+      MONGO_URI: mongodb://mongo:27017      # di dalam Docker, MongoDB dipanggil lewat nama service
+      MONGO_DB_NAME: panganpulse
+    volumes:
+      - ../airflow/dags:/opt/airflow/dags
+      - ../etl:/opt/airflow/etl
+    command:
+      - bash
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username admin --password admin --firstname Admin --lastname PanganPulse --role Admin --email admin@example.com || true
+        airflow scheduler &
+        exec airflow webserver --port 8080
+
+volumes:
+  mongo_data:

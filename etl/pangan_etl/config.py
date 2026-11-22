@@ -80,11 +80,10 @@ CV_MEDIUM_MAX = 30.0  # 15% <= CV < 30% -> "Sedang", selebihnya "Tinggi"
 # ---------------------------------------------------------------------------
 # MongoDB
 # ---------------------------------------------------------------------------
-# Default 27018 = port MongoDB milik docker-compose proyek ini (agar tidak
-# bentrok dengan MongoDB lokal di port 27017). Bisa ditimpa lewat variabel
-# lingkungan MONGO_URI.
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27018")
-MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "pangan_pulse")
+# Sama dengan setup MongoDB tim (docker/docker-compose.yml, backend/utils/mongo.py):
+# port 27017 dan database "panganpulse". Bisa ditimpa lewat variabel lingkungan.
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "panganpulse")
 
 COLLECTION_PRICES = "regional_comparison_prices"    # 1 dokumen = 1 wilayah
 COLLECTION_SUMMARY = "regional_comparison_summary"  # 1 dokumen = 1 komoditas

@@ -9,7 +9,7 @@ from .templatetags import regional_filters as f
 
 def seeded_db():
     """MongoDB palsu berisi data kecil, meniru koleksi hasil pipeline."""
-    db = mongomock.MongoClient().pangan_pulse
+    db = mongomock.MongoClient().panganpulse
     db.regional_comparison_prices.insert_many([
         {"level": "provinsi", "periode": "2026-10", "komoditas": "BERAS MEDIUM",
          "kode_wilayah": "11", "nama_wilayah": "Aceh", "provinsi": "Aceh",
@@ -51,7 +51,7 @@ class RegionalComparisonViewTest(TestCase):
         self.assertEqual(resp.context["periode"], "2026-10")
 
     def test_data_kosong_menampilkan_pesan(self):
-        empty = mongomock.MongoClient().pangan_pulse
+        empty = mongomock.MongoClient().panganpulse
         with patch("apps.regional_comparison.services.get_db", return_value=empty):
             resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 200)
@@ -64,3 +64,4 @@ class FilterTest(TestCase):
         self.assertEqual(f.selisih_rp(-2000), "-Rp 2.000")
         self.assertEqual(f.selisih_persen(16.667), "+16,67%")
         self.assertEqual(f.rupiah(None), "-")
+        

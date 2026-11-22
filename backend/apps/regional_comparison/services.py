@@ -4,28 +4,20 @@ Lapisan akses data Regional Comparison.
 View tidak langsung bicara ke MongoDB; semua query ada di sini supaya mudah
 dites dan diganti. Data berasal dari koleksi yang diisi pipeline ETL/Airflow.
 """
-from django.conf import settings
-from pymongo import MongoClient
+from utils.mongo import get_db  # koneksi MongoDB bersama milik tim (backend/utils/mongo.py)
 
 LEVELS = {"provinsi": "Provinsi", "kabupaten_kota": "Kabupaten/Kota"}
 
-_client = None
-
-
-def get_db():
-    """Koneksi MongoDB (dibuat sekali lalu dipakai ulang)."""
-    global _client
-    if _client is None:
-        _client = MongoClient(settings.MONGO_URI, serverSelectionTimeoutMS=3000)
-    return _client[settings.MONGO_DB_NAME]
+COLLECTION_PRICES = "regional_comparison_prices"
+COLLECTION_SUMMARY = "regional_comparison_summary"
 
 
 def _prices():
-    return get_db()[settings.MONGO_COLLECTION_PRICES]
+    return get_db()[COLLECTION_PRICES]
 
 
 def _summary():
-    return get_db()[settings.MONGO_COLLECTION_SUMMARY]
+    return get_db()[COLLECTION_SUMMARY]
 
 
 def normalize_level(level):
