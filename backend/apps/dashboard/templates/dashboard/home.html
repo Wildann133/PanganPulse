@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}PanganPulse · Ringkasan Harga{% endblock %}
+
+{% block content %}
+<style>
+    /* Token warna grafik (palet data-viz tervalidasi), terang & gelap mengikuti pengaturan sistem. */
+    :root {
+        --plane: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+        --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
+        --naik: #e34948; --turun: #2a78d6; --seri: #2a78d6; --note-bg: #fdf3dc; --btn-on: #0b0b0b; --btn-on-ink: #fcfcfb;
+        color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --plane: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+            --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+            --naik: #e66767; --turun: #3987e5; --seri: #3987e5; --note-bg: #2b2412; --btn-on: #f0efec; --btn-on-ink: #1a1a19;
+            color-scheme: dark;
+        }
+    }
+    body { background: var(--plane); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+    html, body { overflow-x: hidden; }
+    .t-muted { color: var(--muted); }
+    .t-ink2 { color: var(--ink2); }
+    .label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .num { font-variant-numeric: tabular-nums; }
+    .control { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.9rem; max-width: 100%; min-width: 0; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { background: var(--surface); color: var(--ink2); padding: 6px 12px; font-size: 0.9rem; border: 0; cursor: pointer; }
+    .seg button[aria-pressed="true"] { background: var(--btn-on); color: var(--btn-on-ink); }
+    .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .field label, .field .label { font-size: 0.78rem; color: var(--ink2); }
+    .field .control { width: 100%; }
+    .seg button { flex: 1; }
+    .btn { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }
+    .btn:hover { border-color: var(--axis); }
+    .btn:focus-visible, input.control:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
+    .control:focus-visible, .seg button:focus-visible, summary:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
+    .note { background: var(--note-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; }
+    .rank li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 0.92rem; }
+    .rank li:last-child { border-bottom: 0; }
+    .rank .n { color: var(--muted); width: 1.4em; display: inline-block; }
+    table.lengkap { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    table.lengkap th, table.lengkap td { padding: 8px 10px; border-bottom: 1px solid var(--grid); text-align: right; }
+    table.lengkap th:first-child, table.lengkap td:first-child { text-align: left; }
+    table.lengkap th { font-weight: 600; color: var(--ink2); }
+    .arrow-up { color: var(--naik); } .arrow-down { color: var(--turun); }
+</style>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+
+<main class="mx-auto max-w-6xl px-4 py-8 flex flex-col gap-5 min-w-0">
+
+    <header>
+        <div>
+            <p class="label">PanganPulse</p>
+            <h1 class="text-2xl font-semibold">Ringkasan harga pangan</h1>
+            <p id="subjudul" class="text-sm t-ink2">Memuat data…</p>
+        </div>
+    </header>
+
+    <section class="card" aria-label="Filter">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="field"><label for="periode">Periode</label><select id="periode" class="control"></select></div>
+            <div class="field"><label for="pembanding">Dibandingkan dengan</label><select id="pembanding" class="control"></select></div>
+            <div class="field">
+                <span class="label" id="l-ukuran">Ukuran harga</span>
+                <div class="seg" role="group" aria-labelledby="l-ukuran">
+                    <button type="button" id="u-median" aria-pressed="true">Median</button>
+                    <button type="button" id="u-rata_rata" aria-pressed="false">Rata-rata</button>
+                </div>
+            </div>
+            <div class="field"><label for="ambang">Lonjakan jika naik ≥</label><select id="ambang" class="control"></select></div>
+
+            <div class="field"><label for="cari">Cari komoditas</label><input id="cari" type="search" class="control" placeholder="mis. cabai" maxlength="40" autocomplete="off"></div>
+            <div class="field">
+                <span class="label" id="l-arah">Arah perubahan</span>
+                <div class="seg" role="group" aria-labelledby="l-arah">
+                    <button type="button" data-arah="semua" aria-pressed="true">Semua</button>
+                    <button type="button" data-arah="naik" aria-pressed="false">Naik</button>
+                    <button type="button" data-arah="turun" aria-pressed="false">Turun</button>
+                    <button type="button" data-arah="tetap" aria-pressed="false">Tetap</button>
+                </div>
+            </div>
+            <div class="field">
+                <label for="urut">Urutkan</label>
+                <select id="urut" class="control">
+                    <option value="perubahan_desc">Kenaikan terbesar dulu</option>
+                    <option value="perubahan_asc">Penurunan terbesar dulu</option>
+                    <option value="harga_desc">Harga tertinggi dulu</option>
+                    <option value="nama">Nama A–Z</option>
+                </select>
+            </div>
+            <div class="field justify-end"><button type="button" id="reset" class="btn">Atur ulang filter</button></div>
+        </div>
+        <p class="text-xs t-muted mt-3">
+            Periode, pembanding, ukuran, dan ambang mengubah semua angka. Arah, pencarian, dan urutan hanya mengubah grafik perubahan dan tabel.
+            <span id="hitung" class="t-ink2"></span>
+        </p>
+    </section>
+
+    <div id="pesan" class="note" role="status" hidden></div>
+
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Angka ringkas">
+        <div class="card">
+            <p class="label">Komoditas dipantau</p>
+            <p id="kpi-jumlah" class="text-2xl sm:text-3xl font-semibold num">–</p>
+            <p id="kpi-jumlah-sub" class="text-sm t-ink2">&nbsp;</p>
+        </div>
+        <div class="card">
+            <p class="label">Kenaikan terbesar</p>
+            <p class="text-2xl sm:text-3xl font-semibold num"><span class="arrow-up" aria-hidden="true">▲</span> <span id="kpi-naik-nilai">–</span></p>
+            <p id="kpi-naik-nama" class="text-sm t-ink2">&nbsp;</p>
+        </div>
+        <div class="card">
+            <p class="label">Penurunan terbesar</p>
+            <p class="text-2xl sm:text-3xl font-semibold num"><span class="arrow-down" aria-hidden="true">▼</span> <span id="kpi-turun-nilai">–</span></p>
+            <p id="kpi-turun-nama" class="text-sm t-ink2">&nbsp;</p>
+        </div>
+        <div class="card">
+            <p class="label">Data terakhir</p>
+            <p id="kpi-data" class="text-2xl sm:text-3xl font-semibold num">–</p>
+            <p id="kpi-data-sub" class="text-sm t-ink2">&nbsp;</p>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-perubahan">
+        <h2 id="h-perubahan" class="font-semibold">Perubahan harga per komoditas</h2>
+        <p id="lonjakan" class="text-sm t-ink2 mb-2">&nbsp;</p>
+        <div id="grafik-perubahan" role="img" aria-label="Diagram batang perubahan harga per komoditas; angka lengkap ada di tabel di bawah"></div>
+    </section>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+        <section class="card" aria-labelledby="h-tren">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h2 id="h-tren" class="font-semibold">Tren harga bulanan</h2>
+                <select id="pilih-komoditas" class="control" aria-label="Pilih komoditas untuk tren"></select>
+            </div>
+            <div id="grafik-tren" role="img" aria-label="Grafik garis harga bulanan satu komoditas"></div>
+            <p class="text-xs t-muted mt-1">Hanya bulan yang datanya lengkap. Komoditas 2025 berjumlah 27, 2026 berjumlah 17.</p>
+        </section>
+
+        <section class="card" aria-labelledby="h-peringkat">
+            <h2 id="h-peringkat" class="font-semibold">Harga tertinggi dan terendah</h2>
+            <p id="peringkat-sub" class="text-xs t-muted mb-3">&nbsp;</p>
+            <div class="grid sm:grid-cols-2 gap-5">
+                <div><p class="label mb-1">Tertinggi</p><ol id="tertinggi" class="rank"></ol></div>
+                <div><p class="label mb-1">Terendah</p><ol id="terendah" class="rank"></ol></div>
+            </div>
+            <p class="text-xs t-muted mt-3">Satuan tidak tercatat di data sumber, jadi harga antarkomoditas tidak sepenuhnya sebanding. Gunakan persen perubahan untuk membandingkan.</p>
+        </section>
+    </div>
+
+    <details class="card" open>
+        <summary class="cursor-pointer font-semibold">Tabel data komoditas</summary>
+        <div class="overflow-x-auto mt-3">
+            <table class="lengkap num" id="tabel">
+                <thead><tr><th>Komoditas</th><th id="th-sekarang">Periode</th><th id="th-pembanding">Pembanding</th><th>Perubahan</th><th>Rentang antarwilayah</th><th>Wilayah</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </details>
+
+    <footer class="text-xs t-muted">
+        Sumber: data.go.id, nilai harga rata-rata barang kebutuhan pokok, diolah lewat ETL ke MongoDB.
+        Median dihitung dari semua pengamatan harian seluruh wilayah dalam satu bulan.
+    </footer>
+</main>
+
+<script src="{% static 'js/dashboard.js' %}" data-api="{% url 'dashboard:api_ringkasan' %}"></script>
+{% endblock %}
