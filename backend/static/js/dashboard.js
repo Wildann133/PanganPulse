@@ -6,6 +6,7 @@
     "use strict";
 
     var API = document.currentScript.dataset.api;
+    var COMPARE = document.currentScript.dataset.compare || ""; // halaman Perbandingan Wilayah (opsional)
     var BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     var FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
     var ARAH = ["semua", "naik", "turun", "tetap"];
@@ -262,7 +263,16 @@
         }
         rows.forEach(function (k) {
             var tr = document.createElement("tr");
-            tr.appendChild(el("td", judul(k.nama)));
+            var tdNama = document.createElement("td");
+            if (COMPARE) {
+                var link = el("a", judul(k.nama));
+                link.href = COMPARE + "?" + new URLSearchParams({ komoditas: k.nama, periode: d.periode }).toString();
+                link.title = "Bandingkan harga antarwilayah";
+                tdNama.appendChild(link);
+            } else {
+                tdNama.textContent = judul(k.nama);
+            }
+            tr.appendChild(tdNama);
             tr.appendChild(el("td", rupiah(k.nilai)));
             tr.appendChild(el("td", k.nilai_pembanding === null ? "–" : rupiah(k.nilai_pembanding)));
             tr.appendChild(el("td", k.perubahan_pct === null ? "–" : persen(k.perubahan_pct)));

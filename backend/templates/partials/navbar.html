@@ -1,0 +1,12 @@
+{# Navigasi bersama semua halaman. Tambahkan <li> baru di sini saat app lain (analisis harga, clustering) sudah punya halaman. #}
+{% with current=request.resolver_match.app_name %}
+<header class="pp-navbar">
+    <nav class="pp-nav" aria-label="Navigasi utama">
+        <a class="pp-brand" href="{% url 'dashboard:home' %}">PanganPulse</a>
+        <ul>
+            <li><a href="{% url 'dashboard:home' %}"{% if current == 'dashboard' %} aria-current="page"{% endif %}>Ringkasan Harga</a></li>
+            <li><a href="{% url 'regional_comparison:index' %}"{% if current == 'regional_comparison' %} aria-current="page"{% endif %}>Perbandingan Wilayah</a></li>
+        </ul>
+    </nav>
+</header>
+{% endwith %}

@@ -7,3 +7,32 @@
 body {
     font-family: Arial, sans-serif;
 }
+
+/* Navigasi bersama (partials/navbar.html) */
+.pp-navbar {
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.pp-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 12px 16px;
+}
+.pp-brand { font-weight: 700; color: inherit; text-decoration: none; }
+.pp-nav ul { display: flex; flex-wrap: wrap; gap: 20px; list-style: none; }
+.pp-nav ul a {
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.7;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+}
+.pp-nav ul a:hover { opacity: 1; }
+.pp-nav ul a[aria-current="page"] { opacity: 1; font-weight: 600; border-bottom-color: currentColor; }
+
+/* Tautan di dalam tabel data (mis. nama komoditas -> halaman perbandingan wilayah) */
+table.lengkap a { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+table.lengkap a:hover { text-decoration-style: solid; }

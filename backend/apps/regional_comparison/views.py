@@ -27,9 +27,14 @@ def index(request):
 
     # Ambil pilihan dari URL (?level=...&periode=...&komoditas=...), pakai default jika kosong/salah
     level = services.normalize_level(request.GET.get("level"))
+    # Periode awal = bulan terbaru yang datanya LENGKAP (sama seperti dashboard).
+    # Jika koleksi `periode` belum ada, semua bulan dianggap lengkap.
+    status = services.get_period_status()
+    periode_awal = next((p for p in periods if status.get(p, True)), periods[0])
     periode = request.GET.get("periode")
     if periode not in periods:
         periode = periods[0]
+        periode = periode_awal
     komoditas = request.GET.get("komoditas")
     if komoditas not in commodities:
         komoditas = "BERAS MEDIUM" if "BERAS MEDIUM" in commodities else commodities[0]
@@ -47,6 +52,11 @@ def index(request):
 
     context.update({
         "periods": periods,
+        "period_options": [
+            {"value": p, "label": p if status.get(p, True) else f"{p} (belum lengkap)"}
+            for p in periods
+        ],
+        "periode_lengkap": status.get(periode, True),
         "commodities": commodities,
         "level": level,
         "level_label": services.LEVELS[level],
@@ -58,7 +68,8 @@ def index(request):
         # data untuk grafik Plotly (dibaca lewat json_script di template)
         "chart_note": chart_note,
         "chart_ranking": [
-            {"wilayah": r["nama_wilayah"], "harga": r["harga_rata2"]}
+            {"wilayah": r["nama_wilayah"], "harga": r["harga_rata2"],
+             "selisih": r["selisih_rp"]}
             for r in chart_rows
         ],
         "chart_cv": [

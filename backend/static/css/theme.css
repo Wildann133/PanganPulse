@@ -1,0 +1,51 @@
+/* Tema bersama PanganPulse (token warna + komponen) - isinya sama dengan <style> di dashboard/home.html.
+   Dipakai halaman Perbandingan Wilayah. Saat tim siap, home.html cukup memuat file ini
+   (hapus <style> inline-nya) supaya hanya ada satu sumber tampilan. */
+/* Token warna grafik (palet data-viz tervalidasi), terang & gelap mengikuti pengaturan sistem. */
+:root {
+    --plane: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
+    --naik: #e34948; --turun: #2a78d6; --seri: #2a78d6; --note-bg: #fdf3dc; --btn-on: #0b0b0b; --btn-on-ink: #fcfcfb;
+    color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --plane: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+        --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+        --naik: #e66767; --turun: #3987e5; --seri: #3987e5; --note-bg: #2b2412; --btn-on: #f0efec; --btn-on-ink: #1a1a19;
+        color-scheme: dark;
+    }
+}
+body { background: var(--plane); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+html, body { overflow-x: hidden; }
+.t-muted { color: var(--muted); }
+.t-ink2 { color: var(--ink2); }
+.label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+.control { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.9rem; max-width: 100%; min-width: 0; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { background: var(--surface); color: var(--ink2); padding: 6px 12px; font-size: 0.9rem; border: 0; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--btn-on); color: var(--btn-on-ink); }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .label { font-size: 0.78rem; color: var(--ink2); }
+.field .control { width: 100%; }
+.seg button { flex: 1; }
+.btn { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }
+.btn:hover { border-color: var(--axis); }
+.btn:focus-visible, input.control:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
+.control:focus-visible, .seg button:focus-visible, summary:focus-visible { outline: 2px solid var(--seri); outline-offset: 2px; }
+.note { background: var(--note-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; }
+.rank li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 0.92rem; }
+.rank li:last-child { border-bottom: 0; }
+.rank .n { color: var(--muted); width: 1.4em; display: inline-block; }
+table.lengkap { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.lengkap th, table.lengkap td { padding: 8px 10px; border-bottom: 1px solid var(--grid); text-align: right; }
+table.lengkap th:first-child, table.lengkap td:first-child { text-align: left; }
+table.lengkap th { font-weight: 600; color: var(--ink2); }
+.arrow-up { color: var(--naik); } .arrow-down { color: var(--turun); }
+
+.up { color: var(--naik); }     /* lebih mahal dari rata-rata */
+.down { color: var(--turun); }  /* lebih murah dari rata-rata */
+a.kembali { color: var(--ink2); text-decoration: none; font-size: 0.9rem; }
+a.kembali:hover { text-decoration: underline; }

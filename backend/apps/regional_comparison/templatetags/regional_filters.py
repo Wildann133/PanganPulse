@@ -46,7 +46,7 @@ def persen(value):
 
 @register.filter
 def warna_selisih(value):
-    """Kelas warna Tailwind: lebih mahal = merah, lebih murah = hijau."""
+    """Kelas warna tema bersama (theme.css): lebih mahal = merah (up), lebih murah = biru (down)."""
     if value is None or value == "" or float(value) == 0:
-        return "text-slate-600"
-    return "text-red-600" if float(value) > 0 else "text-emerald-600"
+        return "t-ink2"
+    return "up" if float(value) > 0 else "down"

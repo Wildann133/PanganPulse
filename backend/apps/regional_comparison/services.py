@@ -19,6 +19,14 @@ def _prices():
 def _summary():
     return get_db()[COLLECTION_SUMMARY]
 
+def get_period_status():
+    """
+    {periode: lengkap?} dari koleksi `periode` yang dibuat ETL dashboard (build_ringkasan.py).
+    Dipakai agar halaman ini tidak memilih bulan yang datanya belum lengkap sebagai tampilan awal,
+    sama seperti dashboard. Kosong jika koleksi itu belum ada.
+    """
+    rows = get_db()["periode"].find({}, {"_id": 0, "periode": 1, "lengkap": 1})
+    return {r["periode"]: bool(r.get("lengkap")) for r in rows}
 
 def normalize_level(level):
     return level if level in LEVELS else "provinsi"
